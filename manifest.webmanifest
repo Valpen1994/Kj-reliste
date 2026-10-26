@@ -1,0 +1,24 @@
+{
+  "name": "Kjøreliste",
+  "short_name": "Kjøreliste",
+  "description": "Kjøreliste med START/STOPP, sjåførvalg og liggende A4 PDF",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#174e8a",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
