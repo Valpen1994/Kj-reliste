@@ -1,0 +1,125 @@
+<!doctype html><html lang="no"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kjøreliste</title><link rel="manifest" href="./manifest.webmanifest"><meta name="theme-color" content="#174e8a"><meta name="apple-mobile-web-app-capable" content="yes"><link rel="icon" href="./icon-192.png"><style>body{font:16px system-ui;margin:20px;color:#18212b}h1{font-size:24px}.top{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:18px}label{display:flex;flex-direction:column;font-size:13px;font-weight:600}input,select{padding:9px;border:1px solid #aab4bf;border-radius:5px;min-width:0}table{border-collapse:collapse;width:100%;min-width:1050px}th,td{border:1px solid #aab4bf;padding:5px}th{background:#e9eef4;font-size:13px}td input,td select{width:100%;box-sizing:border-box;border:0;padding:8px 3px}button{padding:9px 13px;border:0;border-radius:6px;background:#174e8a;color:white;font-weight:700;cursor:pointer}button.stop{background:#9c3434}button.clear-button{background:#9c3434}.scroll{overflow-x:auto}.actions{display:flex;gap:6px}small{color:#566} @page{size:297mm 210mm;margin:7mm}
+@media print{html,body{width:283mm!important;max-width:283mm!important;margin:0!important;padding:0!important;font-size:10px;overflow:visible!important}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}h1{font-size:15px;margin:0 0 7px}.top{gap:5px;margin-bottom:9px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}.top label{font-size:9px}.top input{font-size:10px;padding:3px;height:18px;box-sizing:border-box;width:100%}button,.no-print{display:none!important}.scroll{overflow:visible}table{width:283mm!important;min-width:0!important;max-width:283mm!important;table-layout:fixed}th,td{padding:2px;border:1px solid #777}th{font-size:9px;overflow-wrap:anywhere}td input,td select{font-size:8px;padding:2px 1px;width:100%;height:19px;box-sizing:border-box}tr{break-inside:avoid;page-break-inside:avoid}thead{display:table-header-group}thead th:nth-child(1),thead th:nth-child(3){width:8%}thead th:nth-child(2),thead th:nth-child(4){width:5%}thead th:nth-child(5){width:5%}thead th:nth-child(6){width:29%}thead th:nth-child(7){width:15%}thead th:nth-child(8){width:8%}thead th:nth-child(9){width:9%}}
+table th:nth-child(6){min-width:225px}table td:nth-child(6) input{font-size:12px}@media print{table th:nth-child(6){min-width:0}table td:nth-child(6) input{font-size:9px}}</style><h1>Kjøreliste / transportskjema – A4 liggende (redigerbar)</h1><div class="top"><label>Avd. nr.<input id="avd"></label><label>Uke nr.<input id="uke"></label><label>Tur<input id="tur"></label><label>Km start<input id="kmstart" inputmode="numeric"></label><label>Km stopp<input id="kmstopp" inputmode="numeric"></label><label>Km kjørt<input id="kmkjort"></label></div><p class="no-print"><button onclick="addRow()">+ Ny linje</button> <button onclick="exportLandscapePDF()">Last ned PDF – ekte A4 liggende</button> <button type="button" onclick="exportLandscapePDF(true)">✉ Send kjøreliste</button> <button onclick="download()">Lagre sikkerhetskopi</button> <button type="button" onclick="document.getElementById('restoreFile').click()">Hent sikkerhetskopi</button> <input type="file" id="restoreFile" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)"> <button type="button" class="clear-button" onclick="clearForm()">Tøm skjema</button> <button onclick="addDriver()">+ Legg til sjåfør</button> <button onclick="manageDrivers()">Rediger sjåførliste</button> <small>Timer vises som timer:minutter (f.eks. 3:06). Alle felter kan endres manuelt. Dato: dd.mm.åååå, klokke: tt:mm. Sjåfør velges i nedtrekksmenyen. Alt lagres på denne enheten.</small></p><datalist id="driver-list"></datalist><div class="scroll"><table><thead><tr><th>Dato start</th><th>Kl. start</th><th>Dato slutt</th><th>Kl. slutt</th><th>Timer</th><th>Produsent</th><th>Leverandør</th><th>Antall containere</th><th>Sjåfør</th><th class="no-print">Registrering</th></tr></thead><tbody id="rows"></tbody></table></div><script>
+let drivers;try{drivers=JSON.parse(localStorage.getItem('kjoreliste-sjaforer-v1'))||[]}catch{drivers=[]}
+function updateDrivers(){let list=document.getElementById('driver-list');list.innerHTML='';drivers.forEach(n=>{let o=document.createElement('option');o.value=n;list.append(o)});document.querySelectorAll('select.driver-select').forEach(sel=>{let value=sel.dataset.value||'';populateDriverSelect(sel,value)})}
+function populateDriverSelect(sel,value){sel.innerHTML='';let opts=[['','Velg sjåfør'],...drivers.map(n=>[n,n])];if(value&&!drivers.includes(value))opts.push([value,value]);opts.push(['__new__','+ Legg til ny sjåfør…']);opts.forEach(([v,label])=>{let o=document.createElement('option');o.value=v;o.textContent=label;sel.append(o)});sel.value=value||''}
+function addDriver(){let n=prompt('Navn på ny sjåfør:');if(!n||!n.trim())return;n=n.trim();if(!drivers.some(x=>x.toLowerCase()===n.toLowerCase()))drivers.push(n);drivers.sort((a,b)=>a.localeCompare(b,'no'));localStorage.setItem('kjoreliste-sjaforer-v1',JSON.stringify(drivers));updateDrivers()}
+function manageDrivers(){let n=prompt('Sjåfører (ett navn per linje). Du kan legge til, endre eller slette navn:',drivers.join('\n'));if(n===null)return;drivers=[...new Set(n.split('\n').map(x=>x.trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'no'));localStorage.setItem('kjoreliste-sjaforer-v1',JSON.stringify(drivers));updateDrivers()}
+updateDrivers();
+const fields=['avd','uke','tur','kmstart','kmstopp','kmkjort'];let data;try{data=JSON.parse(localStorage.getItem('kjoreliste-v1'))||{meta:{},rows:[]}}catch{data={meta:{},rows:[]}};
+function save(){fields.forEach(k=>data.meta[k]=document.getElementById(k).value);localStorage.setItem('kjoreliste-v1',JSON.stringify(data))}
+function calcKm(){let a=Number(document.getElementById('kmstart').value),b=Number(document.getElementById('kmstopp').value);if(document.getElementById('kmstart').value&&document.getElementById('kmstopp').value&&b>=a){document.getElementById('kmkjort').value=b-a;save()}}
+fields.forEach(k=>{let e=document.getElementById(k);e.value=data.meta[k]||'';e.addEventListener('input',()=>{if(k==='kmstart'||k==='kmstopp')calcKm();else save()})});calcKm();
+function dateParts(iso){let d=new Date(iso);return [String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear(),String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')]}
+function hours(r){let a=parseDateTime(r.datoStart,r.klStart),b=parseDateTime(r.datoSlutt,r.klSlutt);if(!a||!b||b<a)return '';let mins=Math.round((b-a)/60000);return Math.floor(mins/60)+':'+String(mins%60).padStart(2,'0')}
+function parseDateTime(date,time){let m=/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(date||''),t=/^(\d{1,2}):(\d{2})$/.exec(time||'');if(!m||!t)return null;let d=new Date(+m[3],+m[2]-1,+m[1],+t[1],+t[2]);return d.getFullYear()==+m[3]&&d.getMonth()==+m[2]-1&&d.getDate()==+m[1]&&d.getHours()==+t[1]&&d.getMinutes()==+t[2]?d:null}
+function stamp(i,kind){let r=data.rows[i];if((kind==='start'?r.datoStart:r.datoSlutt)&&!confirm('Erstatt registrert '+(kind==='start'?'start':'stopp')+'tid?'))return;let [date,time]=dateParts(new Date());if(kind==='start'){r.datoStart=date;r.klStart=time}else{r.datoSlutt=date;r.klSlutt=time}r.timer=hours(r);save();render()}
+function addRow(){data.rows.push({});save();render()}
+function aMatchOldDecimal(r){let a=parseDateTime(r.datoStart,r.klStart),b=parseDateTime(r.datoSlutt,r.klSlutt);return a&&b&&b>=a&&r.timer===((b-a)/3600000).toFixed(2).replace('.',',')}
+function render(){let t=document.getElementById('rows');t.innerHTML='';data.rows.forEach((r,i)=>{
+// Convert previously saved timestamps without losing existing entries.
+if(r.start&&!r.datoStart){[r.datoStart,r.klStart]=dateParts(r.start)}
+if(r.stop&&!r.datoSlutt){[r.datoSlutt,r.klSlutt]=dateParts(r.stop)}
+if(r.timer && /^\d+[,\.]\d{2}$/.test(r.timer) && aMatchOldDecimal(r)){r.timer=hours(r);save()}
+let tr=document.createElement('tr');
+let keys=['datoStart','klStart','datoSlutt','klSlutt','timer','produsent','leverandor','antall','sjafor'];
+keys.forEach((key,j)=>{let td=document.createElement('td'),inp=document.createElement('input');inp.value=r[key]??(j===4?hours(r):'');inp.setAttribute('aria-label',key);if(key==='sjafor'){let sel=document.createElement('select');sel.className='driver-select';sel.dataset.value=r[key]||'';populateDriverSelect(sel,r[key]||'');sel.addEventListener('change',()=>{if(sel.value==='__new__'){let n=prompt('Navn på ny sjåfør:');if(n&&n.trim()){n=n.trim();if(!drivers.some(x=>x.toLowerCase()===n.toLowerCase()))drivers.push(n);drivers.sort((a,b)=>a.localeCompare(b,'no'));try{localStorage.setItem('kjoreliste-sjaforer-v1',JSON.stringify(drivers))}catch(e){}r[key]=n;sel.dataset.value=n;updateDrivers();save()}else{populateDriverSelect(sel,r[key]||'')}}else{r[key]=sel.value;sel.dataset.value=sel.value;save()}});td.append(sel);tr.append(td);return}if(j===0||j===2)inp.placeholder='dd.mm.åååå';if(j===1||j===3)inp.placeholder='tt:mm';inp.addEventListener('input',()=>{r[key]=inp.value;if(j<4){r.timer=hours(r);tr.children[4].querySelector('input').value=r.timer}save()});td.append(inp);tr.append(td)});
+let td=document.createElement('td');td.className='no-print';td.innerHTML='<div class="actions"><button type="button">START</button><button type="button" class="stop">STOPP</button></div>';td.querySelectorAll('button')[0].onclick=()=>stamp(i,'start');td.querySelectorAll('button')[1].onclick=()=>stamp(i,'stop');tr.append(td);t.append(tr)})}
+function clearForm(){
+ if(!confirm('Er du sikker på at du vil tømme hele skjemaet? Lagre først som PDF eller sikkerhetskopi. Sjåførlisten blir beholdt.'))return;
+ data={meta:{},rows:Array.from({length:12},()=>({}))};
+ fields.forEach(k=>document.getElementById(k).value='');
+ save();render();
+}
+async function restoreBackup(event){
+ const file=event.target.files && event.target.files[0];
+ if(!file)return;
+ try{
+  const obj=JSON.parse(await file.text());
+  const restored=(obj && obj.data && Array.isArray(obj.data.rows))?obj.data:obj;
+  if(!restored || !Array.isArray(restored.rows) || !restored.meta || typeof restored.meta!=='object' || Array.isArray(restored.meta))throw Error('Ugyldig sikkerhetskopi');
+  if(!confirm('Hente sikkerhetskopien? Dette erstatter kjørelisten som er åpen nå. Lagre en sikkerhetskopi først hvis du vil beholde den.'))return;
+  data={meta:restored.meta,rows:restored.rows};
+  const restoredDrivers=Array.isArray(obj.sjaforer)?obj.sjaforer:(Array.isArray(obj.drivers)?obj.drivers:null);
+  if(restoredDrivers){
+   drivers=[...new Set([...drivers,...restoredDrivers].filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()))].sort((a,b)=>a.localeCompare(b,'no'));
+   localStorage.setItem('kjoreliste-sjaforer-v1',JSON.stringify(drivers));
+  }
+  fields.forEach(k=>document.getElementById(k).value=data.meta[k]??'');
+  save();updateDrivers();render();
+  alert('Sikkerhetskopien er hentet inn.');
+ }catch(err){alert('Kunne ikke hente sikkerhetskopien. Velg en gyldig JSON-sikkerhetskopi fra kjørelisten.');}
+ finally{event.target.value='';}
+}
+function download(){save();let b=new Blob([JSON.stringify({...data,sjaforer:drivers},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='kjoreliste-sikkerhetskopi.json';a.click();URL.revokeObjectURL(a.href)}
+if(!data.rows.length)data.rows=Array.from({length:12},()=>({}));render();
+
+// Lager en faktisk A4 liggende PDF, uavhengig av nettleserens utskriftsretning.
+async function exportLandscapePDF(share=false){
+ save();
+ const W=841.89,H=595.28, margin=27, inner=W-2*margin;
+ const widths=[67,43,67,43,43,205,139,66,inner-673];
+ const heads=['Dato start','Kl. start','Dato slutt','Kl. slutt','Timer','Produsent','Leverandør','Antall','Sjåfør'];
+ const pdfText=(v)=>String(v??'').replace(/[\\()]/g,'\\$&').replace(/[\r\n]+/g,' ').replace(/[^\x20-\x7e\xA0-\xFF]/g,'?');
+ const b=s=>{const a=[];for(let i=0;i<s.length;i++)a.push(s.charCodeAt(i)&255);return new Uint8Array(a)};
+ let pages=[],ops=[],y=0;
+ function textAt(x,baseline,t,size=9,bold=false){ops.push(`BT /${bold?'F2':'F1'} ${size} Tf 1 0 0 1 ${x.toFixed(2)} ${(H-baseline).toFixed(2)} Tm (${pdfText(t)}) Tj ET`)}
+ function line(x1,y1,x2,y2){ops.push(`${x1.toFixed(2)} ${(H-y1).toFixed(2)} m ${x2.toFixed(2)} ${(H-y2).toFixed(2)} l S`)}
+ function box(x,yy,w,h){ops.push(`${x.toFixed(2)} ${(H-yy-h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S`)}
+ function cut(s,max,size=8){s=String(s??'');const maxchars=Math.max(1,Math.floor(max/(size*.51)));return s.length>maxchars?s.slice(0,maxchars-1)+'…':s}
+ function header(){
+  ops=['0.5 w'];
+  textAt(margin,35,'KJØRELISTE / TRANSPORTSKJEMA',16,true);
+  const m=data.meta||{};
+  let vals=[['Avd. nr.',m.avd],['Uke nr.',m.uke],['Tur',m.tur],['Km start',m.kmstart],['Km stopp',m.kmstopp],['Km kjørt',m.kmkjort]];
+  let x=margin;
+  vals.forEach(([label,val],i)=>{let w=i===2?180:115;textAt(x,57,label,8,true);box(x,62,w-8,22);textAt(x+4,77,cut(val,w-16,10),10);x+=w});
+  y=102;let xx=margin;
+  heads.forEach((h,i)=>{box(xx,y,widths[i],28);textAt(xx+3,y+17,h,8,true);xx+=widths[i]});y+=28;
+ }
+ function newPage(){if(ops.length)pages.push(ops.join('\n'));header()}
+ newPage();
+ const active=data.rows.filter(r=>Object.values(r).some(v=>String(v??'').trim()));
+ for(const r of active){
+  if(y+25>H-margin){newPage()}
+  let x=margin;let cells=[r.datoStart,r.klStart,r.datoSlutt,r.klSlutt,r.timer||hours(r),r.produsent,r.leverandor,r.antall,r.sjafor];
+  cells.forEach((v,i)=>{box(x,y,widths[i],25);textAt(x+3,y+16,cut(v,widths[i]-6,i===5?9:8),i===5?9:8);x+=widths[i]});y+=25;
+ }
+ if(!active.length){let x=margin;for(const w of widths){box(x,y,w,25);x+=w}}
+ pages.push(ops.join('\n'));
+ // Minimal selvstendig PDF med A4 landscape MediaBox; ingen nettverk eller ekstra apper.
+ let objects=[null],add=o=>(objects.push(o),objects.length-1);
+ const catalog=add(''),pageRoot=add('');
+ const font1=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+ const font2=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+ const pageIds=[];
+ pages.forEach(content=>{
+  const bytes=b(content),stream=add(`<< /Length ${bytes.length} >>\nstream\n${content}\nendstream`);
+  pageIds.push(add(`<< /Type /Page /Parent ${pageRoot} 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 ${font1} 0 R /F2 ${font2} 0 R >> >> /Contents ${stream} 0 R >>`));
+ });
+ objects[pageRoot]=`<< /Type /Pages /Kids [${pageIds.map(id=>id+' 0 R').join(' ')}] /Count ${pageIds.length} >>`;
+ objects[catalog]=`<< /Type /Catalog /Pages ${pageRoot} 0 R >>`;
+ let pdf='%PDF-1.4\n%\xE2\xE3\xCF\xD3\n',offsets=[0];
+ objects.slice(1).forEach((o,i)=>{offsets.push(b(pdf).length);pdf+=`${i+1} 0 obj\n${o}\nendobj\n`});
+ const xref=b(pdf).length;
+ pdf+=`xref\n0 ${objects.length}\n0000000000 65535 f \n`;
+ for(let i=1;i<objects.length;i++)pdf+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+ pdf+=`trailer\n<< /Size ${objects.length} /Root ${catalog} 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  const filename='kjoreliste_A4_liggende.pdf';
+ const blob=new Blob([b(pdf)],{type:'application/pdf'});
+  if(share){
+   const file=new File([blob],filename,{type:'application/pdf'});
+   if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+    try{await navigator.share({files:[file],title:'Kjøreliste'});return}
+    catch(err){if(err && err.name==='AbortError')return;}
+   }
+   alert('Direkte deling er ikke tilgjengelig her. PDF-filen lastes ned i stedet. Åpne den i Nedlastinger og velg Del → Gmail.');
+  }
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.warn));
+}
+</script></html>
